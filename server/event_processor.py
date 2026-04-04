@@ -43,9 +43,16 @@ class EventProcessor:
 
     def log_events(self, events: list[str]) -> None:
         for event in events:
+            self._print_alert(event)
             self._append_log(f"EVENT | {event}")
 
     def _append_log(self, message: str) -> None:
         timestamp = datetime.now().isoformat(sep=" ", timespec="seconds")
         with EVENT_LOG_FILE.open("a", encoding="utf-8") as handle:
             handle.write(f"{timestamp} | {message}\n")
+
+    def _print_alert(self, event: str) -> None:
+        if event.startswith("HIGH_LATENCY"):
+            print(f"ALERT: {event}")
+        elif event.startswith("HIGH_PACKET_LOSS"):
+            print(f"ALERT: {event}")
