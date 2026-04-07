@@ -1,238 +1,196 @@
 # Network Event Monitoring System (NEMS)
 
-## Overview
+## 📌 Overview
 
-The **Network Event Monitoring System (NEMS)** is a distributed monitoring system designed to detect and report network events such as latency, packet loss, and node availability. Multiple client nodes monitor their network conditions and periodically send reports to a centralized monitoring server using **UDP communication**.
+The **Network Event Monitoring System (NEMS)** is a distributed monitoring solution designed to track network and system performance across multiple client nodes. Each client collects real-time data such as latency, packet loss, and system metrics, and transmits it to a centralized server using UDP.
 
-The monitoring server collects these reports, analyzes the data, detects abnormal network conditions, and displays the current network status.
-
-This project demonstrates important **Computer Network concepts**, including socket programming, UDP communication, distributed monitoring, and event detection.
+The server processes incoming data, detects abnormal network conditions, and maintains logs for analysis and monitoring.
 
 ---
 
-## Features
+## 🎯 Objectives
 
-* UDP-based communication between nodes and server
-* Real-time monitoring of multiple client nodes
-* Detection of network events such as:
-
-  * High latency
-  * Packet loss
-  * Client offline
-* Node status system to track active clients
-* Monitoring dashboard displayed in the terminal
-* Logging of events for analysis
+* Monitor network performance in real time
+* Detect issues such as high latency and packet loss
+* Track node availability and status
+* Collect system metrics from distributed nodes
+* Provide centralized monitoring and logging
 
 ---
 
-## System Architecture
+## 🏗️ System Architecture
 
-```
-                Monitoring Server
-                   (Server Node)
-
-                        │
-        ┌───────────────┼───────────────┐
-        │               │               │
-     Client A        Client B        Client C
-    (Agent Node)    (Agent Node)    (Agent Node)
+```id="d7d2xh"
+Client Nodes (Agents)  →  UDP Communication  →  Monitoring Server
 ```
 
-Each client runs a **monitoring agent** that measures network conditions and sends monitoring packets to the server.
+* Multiple clients send monitoring data
+* A central server receives, processes, and displays results
 
 ---
 
-## Project Structure
+## ⚙️ Features
 
-```
-network-event-monitor/
-
-server/
-│
-├── monitoring_server.py
-├── event_processor.py
-├── node_registry.py
-└── dashboard.py
-
-agent/
-│
-├── client_agent.py
-├── network_probe.py
-├── system_metrics.py
-└── node_status.py
-
-common/
-│
-├── packet_format.py
-└── config.py
-
-logs/
-│
-└── event_log.txt
-
-README.md
-```
-
-### Server Components
-
-* **monitoring_server.py** – UDP server that receives monitoring packets
-* **event_processor.py** – Detects abnormal network conditions
-* **node_registry.py** – Tracks connected nodes
-* **dashboard.py** – Displays monitoring results
-
-### Client Components
-
-* **client_agent.py** – Main monitoring agent
-* **network_probe.py** – Measures latency and packet loss
-* **system_metrics.py** – Collects system resource information
-* **node_status.py** – Sends periodic node status signals
+* Real-time distributed monitoring
+* UDP-based communication (lightweight and fast)
+* Latency measurement between client and server
+* Packet loss calculation
+* Node status tracking (active/inactive)
+* System metrics collection (CPU and memory usage)
+* Event detection based on configurable thresholds
+* Logging of network events and system activity
+* Database integration for persistent storage
 
 ---
 
-## Packet Format
+## 📁 Project Structure
 
-Monitoring packets follow this structure:
-
+```id="x6n6d1"
+NEMS/
+│
+├── agent/
+│   ├── client_agent.py
+│   ├── node_status.py
+│   ├── network_probe.py
+│   ├── system_metrics.py
+│
+├── server/
+│   ├── monitoring_server.py
+│   ├── event_processor.py
+│   ├── node_registry.py
+│   ├── database.py
+│   ├── dashboard.py
+│
+├── common/
+│   ├── config.py
+│   ├── packet_format.py
+│
+├── logs/
+│   └── event_log.txt
+│
+├── network_logs.db
+├── README.md
 ```
+
+---
+
+## 📦 Data Format
+
+All communication follows a structured packet format:
+
+```id="m5z9z8"
 NODE_ID | TYPE | VALUE | TIMESTAMP
 ```
 
-Examples:
+### Example:
 
-```
-Laptop_A | NODE_STATUS | ALIVE | 17123231
-Laptop_B | LATENCY | 35ms | 17123231
-Laptop_C | PACKET_LOSS | 5% | 17123231
-```
-
----
-
-## Event Detection
-
-The server generates alerts when thresholds are exceeded.
-
-| Condition             | Event            |
-| --------------------- | ---------------- |
-| Latency > 100 ms      | HIGH_LATENCY     |
-| Packet loss > 10%     | HIGH_PACKET_LOSS |
-| No node status received | CLIENT_DOWN      |
-
-Events are logged in:
-
-```
-logs/event_log.txt
+```id="f6s1f0"
+node-123 | NODE_STATUS | ACTIVE | 17123231
+node-123 | LATENCY | 35.5 | 17123231
+node-123 | PACKET_LOSS | 2.0 | 17123231
 ```
 
 ---
 
-## Requirements
+## 🚀 Execution
 
-* Python 3.8 or higher
-* All devices connected to the same network (LAN/WiFi)
+### Run Server
 
-Optional library:
-
-```
-psutil
-```
-
-Install with:
-
-```
-pip install psutil
-```
-
----
-
-## Running the Project
-
-### 1. Start the Monitoring Server
-
-On the server machine:
-
-```
+```bash id="1xqg2x"
 python server/monitoring_server.py
 ```
 
 ---
 
-### 2. Configure Server IP
+### Run Client
 
-Default network settings live in:
-
-```
-common/config.py
+```bash id="7k8n5y"
+python agent/client_agent.py <SERVER_IP>
 ```
 
 Example:
 
-```
-SERVER_HOST = "192.168.1.10"
-SERVER_BIND_HOST = "0.0.0.0"
-SERVER_PORT = 9999
+```bash id="g2n7o9"
+python agent/client_agent.py 192.168.1.240
 ```
 
 ---
 
-### 3. Start Client Agents
+## 🌐 Requirements
 
-On each client laptop:
+* Python 3.x
+* Devices connected to the same network
 
-`SERVER_HOST` is the default destination for clients, and you can override it per client:
+Optional dependency:
 
-```
-python agent/client_agent.py
-python agent/client_agent.py 192.168.1.10
-python agent/client_agent.py 192.168.1.10 Laptop_A
-```
-
----
-
-### Example Output
-
-```
------ Network Monitoring -----
-
-Laptop_A latency 32ms
-Laptop_B latency 41ms
-Laptop_C packet_loss 3%
-
-Active nodes: 3
+```bash id="0m2r9y"
+pip install psutil
 ```
 
 ---
 
-## Applications
+## 📊 Output
 
-This system can be used for:
+The server displays real-time monitoring information such as:
 
-* Monitoring network performance in LAN environments
-* Detecting network congestion or failures
-* Monitoring distributed systems
-* Learning socket programming and network monitoring concepts
-
-Similar real-world tools include:
-
-* Nagios
-* Zabbix
-* Prometheus
-* Datadog
+```id="9t8h4y"
+Node node-123 ACTIVE
+Latency: 32 ms
+Packet Loss: 1%
+```
 
 ---
 
-## Future Improvements
+## 🗄️ Logging and Storage
 
-* Web-based monitoring dashboard
-* Database storage for events
-* Encryption and authentication for agents
+* Event logs are stored in:
+
+  ```
+  logs/event_log.txt
+  ```
+* Persistent data is stored in:
+
+  ```
+  network_logs.db
+  ```
+
+---
+
+## ⚠️ Limitations
+
+* UDP does not guarantee packet delivery
+* Basic implementation without encryption
+* Designed for local network environments
+
+---
+
+## 🔮 Future Enhancements
+
+* Web-based dashboard for visualization
+* Graphical representation of metrics
+* Alert and notification system
+* Secure communication mechanisms
 * Automatic node discovery
-* Graphical visualization of network metrics
 
 ---
 
-## Author
+## 👨‍💻 Team Contribution
 
-Manoj Gaonkar
-Manoj AC
-Ruthik
-B.Tech CSE – Computer Networks Project
+* Client Module: Data collection and transmission
+* Server Module: Data processing and event detection
+* Integration: Dashboard, database, and testing
+
+---
+
+## 🧠 Technologies Used
+
+* Python
+* UDP Socket Programming
+* Distributed System Concepts
+* Network Performance Analysis
+
+---
+
+## 📌 Summary
+
+> A distributed UDP-based monitoring system that collects, processes, and analyzes network and system performance data in real time.
