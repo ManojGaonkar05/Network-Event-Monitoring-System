@@ -1,4 +1,4 @@
-"""SQLite persistence for monitoring snapshots."""
+"""SQLite persistence for monitoring snapshots and event logs."""
 
 from __future__ import annotations
 
@@ -23,6 +23,18 @@ def init_db() -> None:
             )
             """
         )
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS event_logs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                timestamp TEXT NOT NULL,
+                node_id TEXT NOT NULL,
+                level TEXT NOT NULL,
+                event_type TEXT NOT NULL,
+                message TEXT NOT NULL
+            )
+            """
+        )
         conn.commit()
 
 
@@ -40,5 +52,24 @@ def insert_log(
             VALUES (?, ?, ?, ?)
             """,
             (node_id, latency, packet_loss, status),
+        )
+        conn.commit()
+
+
+def insert_event_log(
+    timestamp: str,
+    node_id: str,
+    level: str,
+    event_type: str,
+    message: str,
+) -> None:
+    with sqlite3.connect(DB_PATH) as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            INSERT INTO event_logs (timestamp, node_id, level, event_type, message)
+            VALUES (?, ?, ?, ?, ?)
+            """,
+            (timestamp, node_id, level, event_type, message),
         )
         conn.commit()

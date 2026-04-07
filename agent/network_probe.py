@@ -11,8 +11,8 @@ from common.packet_format import Packet
 
 
 class NetworkProbe:
-    def __init__(self, sock: socket.socket, node_id: str) -> None:
-        self.sock = sock
+    def __init__(self, socket_connection: socket.socket, node_id: str) -> None:
+        self.socket_connection = socket_connection
         self.node_id = node_id
         self._probe_sequence = 0
         self._results: deque[bool] = deque(maxlen=20)
@@ -27,12 +27,12 @@ class NetworkProbe:
             timestamp=time.time(),
         )
         sent_at = time.time()
-        self.sock.sendto(packet.encode(), server_address)
-        self.sock.settimeout(PROBE_TIMEOUT_SECONDS)
+        self.socket_connection.sendto(packet.encode(), server_address)
+        self.socket_connection.settimeout(PROBE_TIMEOUT_SECONDS)
 
         try:
-            raw_data, _ = self.sock.recvfrom(BUFFER_SIZE)
-            response = Packet.decode(raw_data)
+            received_data, _ = self.socket_connection.recvfrom(BUFFER_SIZE)
+            response = Packet.decode(received_data)
             if response.packet_type != "PROBE_ACK" or response.value != str(sequence):
                 self._results.append(False)
                 return None
@@ -43,7 +43,7 @@ class NetworkProbe:
             self._results.append(False)
             return None
         finally:
-            self.sock.settimeout(None)
+            self.socket_connection.settimeout(None)
 
     def packet_loss_percent(self) -> float:
         if not self._results:

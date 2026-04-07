@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import socket
 import sys
+import time
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -14,7 +15,7 @@ from common.config import (
     BUFFER_SIZE,
     LATENCY_THRESHOLD_MS,
     PACKET_LOSS_THRESHOLD_PERCENT,
-    SERVER_HOST,
+    SERVER_BIND_HOST,
     SERVER_PORT,
 )
 from common.packet_format import Packet
@@ -25,52 +26,68 @@ from server.node_registry import NodeRegistry
 
 
 class MonitoringServer:
-    def __init__(self, host: str = SERVER_HOST, port: int = SERVER_PORT) -> None:
+    def __init__(self, host: str = SERVER_BIND_HOST, port: int = SERVER_PORT) -> None:
         self.server_address = (host, port)
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.socket_connection = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.registry = NodeRegistry()
         self.processor = EventProcessor()
         self.dashboard = Dashboard()
 
     def start(self) -> None:
         init_db()
-        self.sock.bind(self.server_address)
+        self.socket_connection.settimeout(1.0)
+        self.socket_connection.bind(self.server_address)
         print(f"Monitoring server listening on UDP {self.server_address[0]}:{self.server_address[1]}")
 
         while True:
-            raw_data, address = self.sock.recvfrom(BUFFER_SIZE)
             try:
-                packet = Packet.decode(raw_data)
+                received_data, client_address = self.socket_connection.recvfrom(BUFFER_SIZE)
+            except socket.timeout:
+                self._log_timeouts()
+                self.dashboard.render(self.registry.snapshot())
+                continue
+            try:
+                packet = Packet.decode(received_data)
             except ValueError as error:
-                print(f"Discarded malformed packet from {address}: {error}")
+                self.processor.log_event(
+                    level="ERROR",
+                    event_type="MALFORMED_PACKET",
+                    node_id="unknown",
+                    message=f"address={client_address[0]}:{client_address[1]} | error={error}",
+                )
                 continue
 
-            self.registry.update(packet.node_id, address, packet.packet_type, packet.value)
+            self.registry.update(packet.node_id, client_address, packet.packet_type, packet.value)
             self.processor.log_packet(packet)
             self._store_snapshot(packet.node_id)
 
             if packet.packet_type == "PROBE":
-                ack = Packet(
+                acknowledgement_packet = Packet(
                     node_id="server",
                     packet_type="PROBE_ACK",
                     value=packet.value,
                     timestamp=packet.timestamp,
                 )
-                self.sock.sendto(ack.encode(), address)
+                self.socket_connection.sendto(acknowledgement_packet.encode(), client_address)
 
-            events = self.processor.evaluate(packet)
-            if events:
-                self.processor.log_events(events)
+            detected_events = self.processor.evaluate(packet)
+            if detected_events:
+                self.processor.log_events(packet.node_id, detected_events)
+
+            self._log_timeouts()
 
             self.dashboard.render(self.registry.snapshot())
 
     def _store_snapshot(self, node_id: str) -> None:
-        node = next((item for item in self.registry.snapshot() if item.node_id == node_id), None)
-        if node is None:
+        node_state = next(
+            (registered_node for registered_node in self.registry.snapshot() if registered_node.node_id == node_id),
+            None,
+        )
+        if node_state is None:
             return
 
-        latency = self._to_float(node.metrics.get("LATENCY"))
-        packet_loss = self._to_float(node.metrics.get("PACKET_LOSS"))
+        latency = self._to_float(node_state.metrics.get("LATENCY"))
+        packet_loss = self._to_float(node_state.metrics.get("PACKET_LOSS"))
         status = "ALERT" if self._has_threshold_breach(latency, packet_loss) else "ALIVE"
         insert_log(node_id, latency, packet_loss, status)
 
@@ -91,9 +108,22 @@ class MonitoringServer:
             or (packet_loss is not None and packet_loss > PACKET_LOSS_THRESHOLD_PERCENT)
         )
 
+    def _log_timeouts(self) -> None:
+        for node_state in self.registry.timed_out_nodes():
+            age_seconds = int(time.time() - node_state.last_seen)
+            self.processor.log_event(
+                level="ERROR",
+                event_type="CLIENT_DOWN",
+                node_id=node_state.node_id,
+                message=(
+                    f"last_seen={age_seconds}s_ago | "
+                    f"address={node_state.address[0]}:{node_state.address[1]}"
+                ),
+            )
+
 
 def main() -> None:
-    MonitoringServer().start()
+    MonitoringServer(host=SERVER_BIND_HOST, port=SERVER_PORT).start()
 
 
 if __name__ == "__main__":

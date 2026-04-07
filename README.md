@@ -19,7 +19,7 @@ This project demonstrates important **Computer Network concepts**, including soc
   * High latency
   * Packet loss
   * Client offline
-* Heartbeat system to track active clients
+* Node status system to track active clients
 * Monitoring dashboard displayed in the terminal
 * Logging of events for analysis
 
@@ -59,7 +59,7 @@ agent/
 ├── client_agent.py
 ├── network_probe.py
 ├── system_metrics.py
-└── heartbeat.py
+└── node_status.py
 
 common/
 │
@@ -85,7 +85,7 @@ README.md
 * **client_agent.py** – Main monitoring agent
 * **network_probe.py** – Measures latency and packet loss
 * **system_metrics.py** – Collects system resource information
-* **heartbeat.py** – Sends periodic heartbeat signals
+* **node_status.py** – Sends periodic node status signals
 
 ---
 
@@ -100,7 +100,7 @@ NODE_ID | TYPE | VALUE | TIMESTAMP
 Examples:
 
 ```
-Laptop_A | HEARTBEAT | OK | 17123231
+Laptop_A | NODE_STATUS | ALIVE | 17123231
 Laptop_B | LATENCY | 35ms | 17123231
 Laptop_C | PACKET_LOSS | 5% | 17123231
 ```
@@ -115,7 +115,7 @@ The server generates alerts when thresholds are exceeded.
 | --------------------- | ---------------- |
 | Latency > 100 ms      | HIGH_LATENCY     |
 | Packet loss > 10%     | HIGH_PACKET_LOSS |
-| No heartbeat received | CLIENT_DOWN      |
+| No node status received | CLIENT_DOWN      |
 
 Events are logged in:
 
@@ -158,7 +158,7 @@ python server/monitoring_server.py
 
 ### 2. Configure Server IP
 
-Edit:
+Default network settings live in:
 
 ```
 common/config.py
@@ -167,9 +167,9 @@ common/config.py
 Example:
 
 ```
-SERVER_IP = "192.168.1.10"
-PORT = 9999
-INTERVAL = 5
+SERVER_HOST = "192.168.1.10"
+SERVER_BIND_HOST = "0.0.0.0"
+SERVER_PORT = 9999
 ```
 
 ---
@@ -178,8 +178,12 @@ INTERVAL = 5
 
 On each client laptop:
 
+`SERVER_HOST` is the default destination for clients, and you can override it per client:
+
 ```
 python agent/client_agent.py
+python agent/client_agent.py 192.168.1.10
+python agent/client_agent.py 192.168.1.10 Laptop_A
 ```
 
 ---
@@ -232,4 +236,3 @@ Manoj Gaonkar
 Manoj AC
 Ruthik
 B.Tech CSE – Computer Networks Project
-

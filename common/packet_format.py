@@ -26,9 +26,9 @@ class Packet:
         ).encode("utf-8")
 
     @classmethod
-    def decode(cls, raw_data: bytes) -> "Packet":
-        decoded = raw_data.decode("utf-8").strip()
-        parts = [part.strip() for part in decoded.split(PACKET_SEPARATOR)]
+    def decode(cls, received_data: bytes) -> "Packet":
+        decoded_packet = received_data.decode("utf-8").strip()
+        parts = [part.strip() for part in decoded_packet.split(PACKET_SEPARATOR)]
         if len(parts) != 4:
             raise ValueError(
                 "Invalid packet format. Expected NODE_ID | TYPE | VALUE | TIMESTAMP."

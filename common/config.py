@@ -2,7 +2,11 @@
 
 from pathlib import Path
 
-SERVER_HOST = "0.0.0.0"
+# Clients send packets to this host by default.
+SERVER_HOST = "127.0.0.1"
+
+# The monitoring server binds to all interfaces.
+SERVER_BIND_HOST = "0.0.0.0"
 SERVER_PORT = 9999
 BUFFER_SIZE = 4096
 
