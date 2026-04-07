@@ -20,32 +20,28 @@ The server processes incoming data, detects abnormal network conditions, and mai
 
 ## 🏗️ System Architecture
 
-```id="d7d2xh"
+```
 Client Nodes (Agents)  →  UDP Communication  →  Monitoring Server
 ```
-
-* Multiple clients send monitoring data
-* A central server receives, processes, and displays results
 
 ---
 
 ## ⚙️ Features
 
 * Real-time distributed monitoring
-* UDP-based communication (lightweight and fast)
-* Latency measurement between client and server
-* Packet loss calculation
-* Node status tracking (active/inactive)
-* System metrics collection (CPU and memory usage)
-* Event detection based on configurable thresholds
-* Logging of network events and system activity
-* Database integration for persistent storage
+* UDP-based communication
+* Latency measurement
+* Packet loss detection
+* Node status tracking
+* System metrics collection (CPU, Memory)
+* Event detection based on thresholds
+* Logging and database storage
 
 ---
 
 ## 📁 Project Structure
 
-```id="x6n6d1"
+```
 NEMS/
 │
 ├── agent/
@@ -76,15 +72,13 @@ NEMS/
 
 ## 📦 Data Format
 
-All communication follows a structured packet format:
-
-```id="m5z9z8"
+```
 NODE_ID | TYPE | VALUE | TIMESTAMP
 ```
 
-### Example:
+Example:
 
-```id="f6s1f0"
+```
 node-123 | NODE_STATUS | ACTIVE | 17123231
 node-123 | LATENCY | 35.5 | 17123231
 node-123 | PACKET_LOSS | 2.0 | 17123231
@@ -92,26 +86,88 @@ node-123 | PACKET_LOSS | 2.0 | 17123231
 
 ---
 
-## 🚀 Execution
+## 🚀 How to Run
 
-### Run Server
+### 🖥️ Run the Server
 
-```bash id="1xqg2x"
+1. Open terminal in the project folder:
+
+```
+cd Network-Event-Monitoring-System
+```
+
+2. Start the server:
+
+```
 python server/monitoring_server.py
+```
+
+3. You should see:
+
+```
+Monitoring server listening on UDP 0.0.0.0:9999
+```
+
+4. Find the server IP:
+
+```
+ipconfig
+```
+
+Example:
+
+```
+IPv4 Address: 10.30.202.120
 ```
 
 ---
 
-### Run Client
+### 💻 Run the Client
 
-```bash id="7k8n5y"
+1. Open terminal in the project folder:
+
+```
+cd Network-Event-Monitoring-System
+```
+
+2. Run the client:
+
+```
 python agent/client_agent.py <SERVER_IP>
 ```
 
 Example:
 
-```bash id="g2n7o9"
-python agent/client_agent.py 192.168.1.240
+```
+python agent/client_agent.py 10.30.202.120
+```
+
+3. Client output:
+
+```
+Client agent started for node-xxxx
+Sending UDP monitoring packets to 10.30.202.120:9999
+```
+
+---
+
+### 🔁 Expected Server Output
+
+```
+Received from 10.30.202.233
+node-xxxx | NODE_STATUS | ACTIVE
+node-xxxx | LATENCY | 32 ms
+node-xxxx | PACKET_LOSS | 0%
+```
+
+---
+
+### 🧪 Local Testing (Optional)
+
+Run both on same system:
+
+```
+python agent/client_agent.py 127.0.0.1
 ```
 
 ---
@@ -121,56 +177,36 @@ python agent/client_agent.py 192.168.1.240
 * Python 3.x
 * Devices connected to the same network
 
-Optional dependency:
+Optional:
 
-```bash id="0m2r9y"
-pip install psutil
 ```
-
----
-
-## 📊 Output
-
-The server displays real-time monitoring information such as:
-
-```id="9t8h4y"
-Node node-123 ACTIVE
-Latency: 32 ms
-Packet Loss: 1%
+pip install psutil
 ```
 
 ---
 
 ## 🗄️ Logging and Storage
 
-* Event logs are stored in:
-
-  ```
-  logs/event_log.txt
-  ```
-* Persistent data is stored in:
-
-  ```
-  network_logs.db
-  ```
+* Logs: `logs/event_log.txt`
+* Database: `network_logs.db`
 
 ---
 
 ## ⚠️ Limitations
 
-* UDP does not guarantee packet delivery
-* Basic implementation without encryption
-* Designed for local network environments
+* UDP does not guarantee delivery
+* No encryption (basic implementation)
+* Best suited for local networks
 
 ---
 
 ## 🔮 Future Enhancements
 
-* Web-based dashboard for visualization
-* Graphical representation of metrics
-* Alert and notification system
-* Secure communication mechanisms
-* Automatic node discovery
+* Web dashboard
+* Graph visualization
+* Alert system
+* Secure communication
+* Auto node discovery
 
 ---
 
@@ -186,11 +222,11 @@ Packet Loss: 1%
 
 * Python
 * UDP Socket Programming
-* Distributed System Concepts
-* Network Performance Analysis
+* Distributed Systems
+* Network Monitoring
 
 ---
 
 ## 📌 Summary
 
-> A distributed UDP-based monitoring system that collects, processes, and analyzes network and system performance data in real time.
+> A distributed UDP-based monitoring system that collects, processes, and analyzes network and system performance in real time.
