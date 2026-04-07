@@ -1,4 +1,4 @@
-"""Terminal dashboard for displaying active node monitoring data."""
+"""Terminal dashboard for displaying node monitoring data."""
 
 from __future__ import annotations
 
@@ -13,7 +13,8 @@ class Dashboard:
         os.system("cls" if os.name == "nt" else "clear")
         print("=== Network Event Monitoring System ===")
         print(f"Updated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-        print(f"Active nodes: {len(nodes)}")
+        active_nodes = sum(1 for node_state in nodes if node_state.is_active)
+        print(f"Nodes: {len(nodes)} total | {active_nodes} active")
         print("-" * 88)
         print(
             f"{'Node ID':<16}{'Address':<24}{'Latency(ms)':<14}"
@@ -22,7 +23,7 @@ class Dashboard:
         print("-" * 88)
 
         if not nodes:
-            print("No active nodes detected.")
+            print("No nodes registered.")
             return
 
         now = datetime.now().timestamp()
@@ -30,7 +31,7 @@ class Dashboard:
             client_address = f"{node_state.address[0]}:{node_state.address[1]}"
             latency = node_state.metrics.get("LATENCY", "-")
             packet_loss = node_state.metrics.get("PACKET_LOSS", "-")
-            node_status = node_state.metrics.get("NODE_STATUS", "-")
+            node_status = node_state.status
             age_seconds = int(now - node_state.last_seen)
             print(
                 f"{node_state.node_id:<16}{client_address:<24}{latency:<14}"
