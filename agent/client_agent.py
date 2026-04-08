@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import socket
 import sys
 import time
@@ -41,6 +42,15 @@ class ClientAgent:
                 )
             )
 
+    def _display_metrics(self, latency_ms: float | None, packet_loss: float) -> None:
+        os.system("cls" if os.name == "nt" else "clear")
+        print(f"[CLIENT {self.node_id}]")
+        if latency_ms is None:
+            print("Latency: TIMEOUT")
+        else:
+            print(f"Latency: {latency_ms:.2f} ms")
+        print(f"Packet Loss: {packet_loss:.2f}%")
+
     def run(self) -> None:
         print(
             f"Client agent started for {self.node_id}. "
@@ -60,6 +70,7 @@ class ClientAgent:
                 )
 
             packet_loss = self.probe.packet_loss_percent()
+            self._display_metrics(latency_ms, packet_loss)
             self._send_packet(
                 Packet(
                     node_id=self.node_id,
