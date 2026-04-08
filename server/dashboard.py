@@ -9,10 +9,18 @@ from server.node_registry import NodeState
 
 
 class Dashboard:
-    def render(self, nodes: list[NodeState]) -> None:
+    def render(
+        self,
+        nodes: list[NodeState],
+        packets_received: int = 0,
+        packet_rate: float = 0.0,
+    ) -> None:
         os.system("cls" if os.name == "nt" else "clear")
         print("=== Network Event Monitoring System ===")
         print(f"Updated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        print("[SERVER]")
+        print(f"Packets Received: {packets_received}")
+        print(f"Packet Rate: {packet_rate:.2f} packets/sec")
         active_nodes = sum(1 for node_state in nodes if node_state.is_active)
         print(f"Nodes: {len(nodes)} total | {active_nodes} active")
         print("-" * 88)

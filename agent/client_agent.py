@@ -27,9 +27,12 @@ class ClientAgent:
         self.socket_connection = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.metrics = SystemMetrics()
         self.probe = NetworkProbe(self.socket_connection, self.node_id)
+        self.packets_sent = 0
+        self.started_at = time.time()
 
     def _send_packet(self, packet: Packet) -> None:
         self.socket_connection.sendto(packet.encode(), self.server_address)
+        self.packets_sent += 1
 
     def _send_metrics(self) -> None:
         for metric_type, metric_value in self.metrics.collect().items():
@@ -44,12 +47,16 @@ class ClientAgent:
 
     def _display_metrics(self, latency_ms: float | None, packet_loss: float) -> None:
         os.system("cls" if os.name == "nt" else "clear")
+        elapsed_time = max(time.time() - self.started_at, 1e-6)
+        packet_rate = self.packets_sent / elapsed_time
         print(f"[CLIENT {self.node_id}]")
         if latency_ms is None:
             print("Latency: TIMEOUT")
         else:
             print(f"Latency: {latency_ms:.2f} ms")
         print(f"Packet Loss: {packet_loss:.2f}%")
+        print(f"Packets Sent: {self.packets_sent}")
+        print(f"Packet Rate: {packet_rate:.2f} packets/sec")
 
     def run(self) -> None:
         print(
@@ -70,7 +77,6 @@ class ClientAgent:
                 )
 
             packet_loss = self.probe.packet_loss_percent()
-            self._display_metrics(latency_ms, packet_loss)
             self._send_packet(
                 Packet(
                     node_id=self.node_id,
@@ -81,6 +87,7 @@ class ClientAgent:
             )
 
             self._send_metrics()
+            self._display_metrics(latency_ms, packet_loss)
             time.sleep(MONITOR_INTERVAL_SECONDS)
 
 

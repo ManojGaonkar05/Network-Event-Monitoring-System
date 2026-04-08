@@ -32,6 +32,12 @@ class MonitoringServer:
         self.registry = NodeRegistry()
         self.processor = EventProcessor()
         self.dashboard = Dashboard()
+        self.packets_received = 0
+        self.started_at = time.time()
+
+    def _packet_rate(self) -> float:
+        elapsed_time = max(time.time() - self.started_at, 1e-6)
+        return self.packets_received / elapsed_time
 
     def start(self) -> None:
         init_db()
@@ -42,9 +48,14 @@ class MonitoringServer:
         while True:
             try:
                 received_data, client_address = self.socket_connection.recvfrom(BUFFER_SIZE)
+                self.packets_received += 1
             except socket.timeout:
                 self._log_timeouts()
-                self.dashboard.render(self.registry.snapshot())
+                self.dashboard.render(
+                    self.registry.snapshot(),
+                    packets_received=self.packets_received,
+                    packet_rate=self._packet_rate(),
+                )
                 continue
             try:
                 packet = Packet.decode(received_data)
@@ -76,7 +87,11 @@ class MonitoringServer:
 
             self._log_timeouts()
 
-            self.dashboard.render(self.registry.snapshot())
+            self.dashboard.render(
+                self.registry.snapshot(),
+                packets_received=self.packets_received,
+                packet_rate=self._packet_rate(),
+            )
 
     def _store_snapshot(self, node_id: str) -> None:
         node_state = next(
