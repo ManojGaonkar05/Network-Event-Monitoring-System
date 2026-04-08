@@ -5,6 +5,7 @@ from __future__ import annotations
 import socket
 import sys
 import time
+from datetime import datetime
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -13,6 +14,7 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from common.config import (
     BUFFER_SIZE,
+    EVENT_LOG_FILE,
     LATENCY_THRESHOLD_MS,
     PACKET_LOSS_THRESHOLD_PERCENT,
     SERVER_BIND_HOST,
@@ -24,6 +26,8 @@ from server.dashboard import Dashboard
 from server.event_processor import EventProcessor
 from server.node_registry import NodeRegistry
 
+REFRESH_INTERVAL = 1
+
 
 class MonitoringServer:
     def __init__(self, host: str = SERVER_BIND_HOST, port: int = SERVER_PORT) -> None:
@@ -34,6 +38,7 @@ class MonitoringServer:
         self.dashboard = Dashboard()
         self.packets_received = 0
         self.started_at = time.time()
+        self.last_dashboard_refresh = 0.0
 
     def _packet_rate(self) -> float:
         elapsed_time = max(time.time() - self.started_at, 1e-6)
@@ -48,14 +53,11 @@ class MonitoringServer:
         while True:
             try:
                 received_data, client_address = self.socket_connection.recvfrom(BUFFER_SIZE)
+                received_at = time.time()
                 self.packets_received += 1
             except socket.timeout:
                 self._log_timeouts()
-                self.dashboard.render(
-                    self.registry.snapshot(),
-                    packets_received=self.packets_received,
-                    packet_rate=self._packet_rate(),
-                )
+                self._render_dashboard_if_due()
                 continue
             try:
                 packet = Packet.decode(received_data)
@@ -68,7 +70,25 @@ class MonitoringServer:
                 )
                 continue
 
-            self.registry.update(packet.node_id, client_address, packet.packet_type, packet.value)
+            self.registry.update(
+                packet.node_id,
+                client_address,
+                packet.packet_type,
+                packet.value,
+                received_at=received_at,
+            )
+            node_state = next(
+                (registered_node for registered_node in self.registry.snapshot() if registered_node.node_id == packet.node_id),
+                None,
+            )
+            latency = node_state.metrics.get("LATENCY", "-") if node_state is not None else "-"
+            loss = node_state.metrics.get("PACKET_LOSS", "-") if node_state is not None else "-"
+            log_entry = (
+                f"[{datetime.now()}] {packet.node_id} | "
+                f"{client_address[0]}:{client_address[1]} | {latency} ms | Loss: {loss}%"
+            )
+            with open("logs/event_log.txt", "a", encoding="utf-8") as f:
+                f.write(log_entry + "\n")
             self.processor.log_packet(packet)
             self._store_snapshot(packet.node_id)
 
@@ -86,12 +106,7 @@ class MonitoringServer:
                 self.processor.log_events(packet.node_id, detected_events)
 
             self._log_timeouts()
-
-            self.dashboard.render(
-                self.registry.snapshot(),
-                packets_received=self.packets_received,
-                packet_rate=self._packet_rate(),
-            )
+            self._render_dashboard_if_due()
 
     def _store_snapshot(self, node_id: str) -> None:
         node_state = next(
@@ -105,6 +120,17 @@ class MonitoringServer:
         packet_loss = self._to_float(node_state.metrics.get("PACKET_LOSS"))
         status = "ALERT" if self._has_threshold_breach(latency, packet_loss) else "ALIVE"
         insert_log(node_id, latency, packet_loss, status)
+
+    def _render_dashboard_if_due(self) -> None:
+        current_time = time.time()
+        if (current_time - self.last_dashboard_refresh) < REFRESH_INTERVAL:
+            return
+        self.dashboard.render(
+            self.registry.snapshot(),
+            packets_received=self.packets_received,
+            packet_rate=self._packet_rate(),
+        )
+        self.last_dashboard_refresh = current_time
 
     @staticmethod
     def _to_float(value: str | None) -> float | None:

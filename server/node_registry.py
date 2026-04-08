@@ -49,17 +49,20 @@ class NodeRegistry:
         client_address: tuple[str, int],
         packet_type: str,
         value: str,
+        received_at: float | None = None,
     ) -> None:
+        current_time = received_at if received_at is not None else self._current_time()
         node_state = self._nodes.get(node_id)
         if node_state is None:
             node_state = NodeState(
                 node_id=node_id,
                 address=client_address,
-                last_seen=self._current_time(),
+                last_seen=current_time,
             )
             self._nodes[node_id] = node_state
         node_state.address = client_address
-        node_state.last_seen = self._current_time()
+        # Refresh last_seen on every packet, regardless of packet type.
+        node_state.last_seen = current_time
         node_state.timeout_reported = False
         node_state.metrics[packet_type] = value
         node_state.refresh_status()
