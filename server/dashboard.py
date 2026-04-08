@@ -1,12 +1,13 @@
 """Terminal dashboard for displaying node monitoring data."""
-
 from __future__ import annotations
 
+import sys
 import os
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 from datetime import datetime
-
 from server.node_registry import NodeState
-
 
 class Dashboard:
     def render(
